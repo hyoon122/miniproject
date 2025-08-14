@@ -2,6 +2,12 @@ import cv2
 from pyzbar import pyzbar
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
+import warnings
+import os
+
+# ZBar 경고 무시
+warnings.filterwarnings("ignore")
+os.environ["PYTHONWARNINGS"] = "ignore"
 
 # QR코드만 필터링
 def detect_qr_from_frame(frame):
