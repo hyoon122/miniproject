@@ -21,7 +21,7 @@ def detect_qr_opencv(frame):
     return frame
         
 
-def draw_text_opencv(img, text, position, font_path="malgun.ttf", font_size=20, color=(255, 255, 0)):
+def draw_text_opencv(img, text, position, font_size=20, color=(255, 255, 0)):
     """
     Pillow를 이용해 OpenCV 이미지에 한글 텍스트를 표시
     """
@@ -31,11 +31,12 @@ def draw_text_opencv(img, text, position, font_path="malgun.ttf", font_size=20, 
 
     # 한글 폰트 설정 (Windows 기본 Malgun Gothic 사용)
     try:
+        font_path = "C:/Windows/Fonts/malgun.ttf"  # 절대 경로 지정
         font = ImageFont.truetype(font_path, font_size)
     except IOError:
-        print("⚠️ 폰트를 불러올 수 없습니다. 경로를 확인하세요.")
+        print("폰트를 불러올 수 없습니다. 경로를 확인하세요.")
         font = ImageFont.load_default()
-        
+
     draw.text(position, text, font=font, fill=color)
 
     # 다시 OpenCV 이미지로 변환
