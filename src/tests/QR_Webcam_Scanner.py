@@ -8,16 +8,19 @@ def detect_qr_opencv(frame):
     detector = cv2.QRCodeDetector()
     data, bbox, _ = detector.detectAndDecode(frame)
 
-    if bbox is not None and data:
-        bbox = bbox.astype(int)  # 꼭 int로 변환 (OpenCV 그리기 함수 호환)
-        for i in range(len(bbox[0])):
+    # QR이 없거나 디코딩된 내용이 없으면 바로 원본 리턴
+    if not data or bbox is None:
+        return frame
+
+    bbox = bbox.astype(int)  # 꼭 int로 변환 (OpenCV 그리기 함수 호환)
+    for i in range(len(bbox[0])):
             pt1 = tuple(bbox[0][i])
             pt2 = tuple(bbox[0][(i + 1) % len(bbox[0])])
             cv2.line(frame, pt1, pt2, (0, 255, 0), 2)
 
-        top_left = tuple(bbox[0][0])
-        frame = draw_text_opencv(frame, f"QR 내용: {data}", (top_left[0], top_left[1] - 30))
-
+    top_left = tuple(bbox[0][0])
+    print(f"[디코딩된 QR 내용] {data}")  # 콘솔 확인용
+    frame = draw_text_opencv(frame, f"QR 내용: {data}", (top_left[0], top_left[1] - 20))
     return frame
         
 
@@ -58,7 +61,7 @@ def main():
         # OpenCV 기반 QR 감지 함수 호출
         frame_display = detect_qr_opencv(frame)
 
-        cv2.imshow("QR 코드 감지", frame_display)
+        cv2.imshow("QR Scanner", frame_display)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
