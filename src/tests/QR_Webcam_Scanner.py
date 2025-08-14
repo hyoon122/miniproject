@@ -5,14 +5,16 @@ import sys, os
 import time
 last_detect_time = 0
 
+# QR코드만 필터링
 def detect_qr_opencv(frame):
     global last_data, last_detect_time
     detector = cv2.QRCodeDetector()
     data, bbox, _ = detector.detectAndDecode(frame)
 
+    # QR이 없거나 디코딩된 내용이 없으면 바로 원본 리턴
     if not data or bbox is None:
         return frame
-
+    
     # 2초 이내에는 재감지하지 않음
     now = time.time()
     if data == last_data and now - last_detect_time < 2:
@@ -20,15 +22,6 @@ def detect_qr_opencv(frame):
 
     last_data = data
     last_detect_time = now
-    
-# QR코드만 필터링
-def detect_qr_opencv(frame):
-    detector = cv2.QRCodeDetector()
-    data, bbox, _ = detector.detectAndDecode(frame)
-
-    # QR이 없거나 디코딩된 내용이 없으면 바로 원본 리턴
-    if not data or bbox is None:
-        return frame
 
     bbox = bbox.astype(int)  # 꼭 int로 변환 (OpenCV 그리기 함수 호환)
     for i in range(len(bbox[0])):
