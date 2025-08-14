@@ -16,34 +16,26 @@ def detect_qr_from_frame(frame):
         (x, y, w, h) = qr.rect
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-         # 한글 지원 텍스트 표시
+        # 한글 지원 텍스트 표시
         frame = draw_text_opencv(frame, f"QR 내용: {qr_data}", (x, y - 10), font_size=20, color=(255, 255, 0))
 
-        # 새로운 창에 QR 코드 내용 표시
-        window_name = f"QR 내용 {i}"
-        current_qr_ids.append(window_name)
-        cv2.imshow(window_name, create_text_image(qr_data))
-
-    # 이전에 열려있던 QR 창 중 현재 프레임에 없는 QR 내용 창 닫기
-    for win in list(qr_windows.keys()):
-        if win not in current_qr_ids:
-            cv2.destroyWindow(win)
-            del qr_windows[win]
-
-    # 현재 QR 창 업데이트
-    for win in current_qr_ids:
-        qr_windows[win] = True
-
     return frame
+        
 
-def create_text_image(text, width=400, height=100):
+def draw_text_opencv(img, text, position, font_path="malgun.ttf", font_size=20, color=(255, 255, 255)):
     """
-    텍스트를 OpenCV 이미지로 변환
+    OpenCV 이미지에 한글 텍스트를 표시
     """
-    import numpy as np
-    img = np.zeros((height, width, 3), dtype=np.uint8)
-    cv2.putText(img, text, (10, height//2), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-    return img
+    # OpenCV 이미지를 PIL 이미지로 변환
+    img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(img_pil)
+
+    # 한글 폰트 설정 (Windows 기본 Malgun Gothic 사용)
+    font = ImageFont.truetype(font_path, font_size)
+    draw.text(position, text, font=font, fill=color)
+
+    # 다시 OpenCV 이미지로 변환
+    return cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
 
 def main():
     cap = cv2.VideoCapture(0)
@@ -54,7 +46,10 @@ def main():
         if not ret:
             break
 
-        frame = detect_qr_from_frame(frame)
+        # 그레이스케일로 변환하여 인식 안정화
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame = detect_qr_from_frame(gray)
+
         cv2.imshow("QR 코드 감지", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
