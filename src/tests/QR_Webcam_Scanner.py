@@ -3,13 +3,30 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 import sys, os
 import time
+
+# --- stderr 완전 무력화 (OpenCV 내부 경고 제거 목적) ---
+class SuppressStderr:
+    def __enter__(self):
+        self.original_stderr_fd = sys.stderr.fileno()
+        self.devnull_fd = os.open(os.devnull, os.O_RDWR)
+        self.saved_stderr_fd = os.dup(self.original_stderr_fd)
+        os.dup2(self.devnull_fd, self.original_stderr_fd)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.dup2(self.saved_stderr_fd, self.original_stderr_fd)
+        os.close(self.devnull_fd)
+        os.close(self.saved_stderr_fd)
+
+last_data = None
 last_detect_time = 0
 
 # QR코드만 필터링
 def detect_qr_opencv(frame):
     global last_data, last_detect_time
-    detector = cv2.QRCodeDetector()
-    data, bbox, _ = detector.detectAndDecode(frame)
+
+    with SuppressStderr():  # stderr 강제 차단 (콘솔 출력 완벽 차단)
+        detector = cv2.QRCodeDetector()
+        data, bbox, _ = detector.detectAndDecode(frame)
 
     # QR이 없거나 디코딩된 내용이 없으면 바로 원본 리턴
     if not data or bbox is None:
