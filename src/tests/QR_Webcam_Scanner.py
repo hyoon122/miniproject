@@ -1,22 +1,23 @@
 import cv2
 from pyzbar import pyzbar
+from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 
-# QR 코드 내용을 표시하는 창 관리용 딕셔너리
-qr_windows = {}
-
+# QR코드만 필터링
 def detect_qr_from_frame(frame):
     """
     주어진 영상 프레임에서 QR 코드를 탐지하고 표시
     """
     qr_codes = pyzbar.decode(frame)
-    current_qr_ids = []
+    qr_codes = [qr for qr in qr_codes if qr.type == "QRCODE"]  # QR 코드만 선택
 
-    for i, qr in enumerate(qr_codes):
+    for qr in enumerate(qr_codes):
         qr_data = qr.data.decode('utf-8')
         (x, y, w, h) = qr.rect
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        cv2.putText(frame, f"QR 내용: {qr_data}", (x, y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+
+         # 한글 지원 텍스트 표시
+        frame = draw_text_opencv(frame, f"QR 내용: {qr_data}", (x, y - 10), font_size=20, color=(255, 255, 0))
 
         # 새로운 창에 QR 코드 내용 표시
         window_name = f"QR 내용 {i}"
