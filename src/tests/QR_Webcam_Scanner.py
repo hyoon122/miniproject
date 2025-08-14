@@ -2,7 +2,25 @@ import cv2
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 import sys, os
+import time
+last_detect_time = 0
 
+def detect_qr_opencv(frame):
+    global last_data, last_detect_time
+    detector = cv2.QRCodeDetector()
+    data, bbox, _ = detector.detectAndDecode(frame)
+
+    if not data or bbox is None:
+        return frame
+
+    # 2초 이내에는 재감지하지 않음
+    now = time.time()
+    if data == last_data and now - last_detect_time < 2:
+        return frame
+
+    last_data = data
+    last_detect_time = now
+    
 # QR코드만 필터링
 def detect_qr_opencv(frame):
     detector = cv2.QRCodeDetector()
