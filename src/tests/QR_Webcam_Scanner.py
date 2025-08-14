@@ -20,7 +20,7 @@ def detect_qr_from_frame(frame_color, frame_gray):
     qr_codes = pyzbar.decode(frame_gray)
     qr_codes = [qr for qr in qr_codes if qr.type == "QRCODE"]  # QR 코드만 선택
 
-    for qr in enumerate(qr_codes):
+    for qr in qr_codes:
         qr_data = qr.data.decode('utf-8')
         (x, y, w, h) = qr.rect
         cv2.rectangle(frame_color, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -56,7 +56,8 @@ def main():
             break
 
         # 컬러 프레임 사용
-        frame_display = detect_qr_from_frame(frame)
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        frame_display = detect_qr_from_frame(frame, frame_gray)
 
         cv2.imshow("QR 코드 감지", frame_display)
 
