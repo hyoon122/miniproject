@@ -6,7 +6,7 @@ import warnings
 import sys, os
 
 # stderr를 잠시 리디렉션하여 ZBar 경고 무시
-class DummyFile(object):
+class DummyFile:
     def write(self, x): pass
     def flush(self): pass
 
@@ -55,11 +55,10 @@ def main():
         if not ret:
             break
 
-        # 그레이스케일로 변환하여 인식 안정화
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        frame = detect_qr_from_frame(frame, gray)
+        # 컬러 프레임 사용
+        frame_display = detect_qr_from_frame(frame)
 
-        cv2.imshow("QR 코드 감지", frame)
+        cv2.imshow("QR 코드 감지", frame_display)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
