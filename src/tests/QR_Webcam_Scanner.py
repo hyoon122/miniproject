@@ -1,34 +1,24 @@
 import cv2
-from pyzbar import pyzbar
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-import warnings
 import sys, os
 
-# stderr를 잠시 리디렉션하여 ZBar 경고 무시
-class DummyFile:
-    def write(self, x): pass
-    def flush(self): pass
-
-sys.stderr = DummyFile()
-
 # QR코드만 필터링
-def detect_qr_from_frame(frame_color, frame_gray):
-    """
-    주어진 영상 프레임에서 QR 코드를 탐지하고 표시
-    """
-    qr_codes = pyzbar.decode(frame_gray)
-    qr_codes = [qr for qr in qr_codes if qr.type == "QRCODE"]  # QR 코드만 선택
+def detect_qr_opencv(frame):
+    detector = cv2.QRCodeDetector()
+    data, bbox, _ = detector.detectAndDecode(frame)
 
-    for qr in qr_codes:
-        qr_data = qr.data.decode('utf-8')
-        (x, y, w, h) = qr.rect
-        cv2.rectangle(frame_color, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    if bbox is not None and data:
+        bbox = bbox.astype(int)  # 꼭 int로 변환 (OpenCV 그리기 함수 호환)
+        for i in range(len(bbox[0])):
+            pt1 = tuple(bbox[0][i])
+            pt2 = tuple(bbox[0][(i + 1) % len(bbox[0])])
+            cv2.line(frame, pt1, pt2, (0, 255, 0), 2)
 
-        # 한글 지원 텍스트 표시
-        frame_color = draw_text_opencv(frame_color, f"QR 내용: {qr_data}", (x, y - 30))
+        top_left = tuple(bbox[0][0])
+        frame = draw_text_opencv(frame, f"QR 내용: {data}", (top_left[0], top_left[1] - 30))
 
-    return frame_color
+    return frame
         
 
 def draw_text_opencv(img, text, position, font_path="malgun.ttf", font_size=20, color=(255, 255, 0)):
@@ -48,6 +38,10 @@ def draw_text_opencv(img, text, position, font_path="malgun.ttf", font_size=20, 
 
 def main():
     cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("카메라를 열 수 없습니다.")
+        return
+    
     print("실시간 QR 코드 감지를 시작합니다. 종료하려면 'q'를 누르세요.")
 
     while True:
@@ -55,9 +49,8 @@ def main():
         if not ret:
             break
 
-        # 컬러 프레임 사용
-        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        frame_display = detect_qr_from_frame(frame, frame_gray)
+        # OpenCV 기반 QR 감지 함수 호출
+        frame_display = detect_qr_opencv(frame)
 
         cv2.imshow("QR 코드 감지", frame_display)
 
