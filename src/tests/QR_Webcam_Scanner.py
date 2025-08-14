@@ -3,7 +3,7 @@ from pyzbar import pyzbar
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 import warnings
-import os
+import sys, os
 
 # stderr를 잠시 리디렉션하여 ZBar 경고 무시
 class DummyFile(object):
