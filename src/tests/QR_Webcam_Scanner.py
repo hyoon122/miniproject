@@ -5,32 +5,35 @@ import numpy as np
 import warnings
 import os
 
-# ZBar 경고 무시
-warnings.filterwarnings("ignore")
-os.environ["PYTHONWARNINGS"] = "ignore"
+# stderr를 잠시 리디렉션하여 ZBar 경고 무시
+class DummyFile(object):
+    def write(self, x): pass
+    def flush(self): pass
+
+sys.stderr = DummyFile()
 
 # QR코드만 필터링
-def detect_qr_from_frame(frame):
+def detect_qr_from_frame(frame_color, frame_gray):
     """
     주어진 영상 프레임에서 QR 코드를 탐지하고 표시
     """
-    qr_codes = pyzbar.decode(frame)
+    qr_codes = pyzbar.decode(frame_gray)
     qr_codes = [qr for qr in qr_codes if qr.type == "QRCODE"]  # QR 코드만 선택
 
     for qr in enumerate(qr_codes):
         qr_data = qr.data.decode('utf-8')
         (x, y, w, h) = qr.rect
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.rectangle(frame_color, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         # 한글 지원 텍스트 표시
-        frame = draw_text_opencv(frame, f"QR 내용: {qr_data}", (x, y - 10), font_size=20, color=(255, 255, 0))
+        frame_color = draw_text_opencv(frame_color, f"QR 내용: {qr_data}", (x, y - 30))
 
-    return frame
+    return frame_color
         
 
-def draw_text_opencv(img, text, position, font_path="malgun.ttf", font_size=20, color=(255, 255, 255)):
+def draw_text_opencv(img, text, position, font_path="malgun.ttf", font_size=20, color=(255, 255, 0)):
     """
-    OpenCV 이미지에 한글 텍스트를 표시
+    Pillow를 이용해 OpenCV 이미지에 한글 텍스트를 표시
     """
     # OpenCV 이미지를 PIL 이미지로 변환
     img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
@@ -54,7 +57,7 @@ def main():
 
         # 그레이스케일로 변환하여 인식 안정화
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        frame = detect_qr_from_frame(gray)
+        frame = detect_qr_from_frame(frame, gray)
 
         cv2.imshow("QR 코드 감지", frame)
 
