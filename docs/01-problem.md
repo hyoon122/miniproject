@@ -6,7 +6,7 @@
 
 ## 변경 후 코드
 
-import cv2
+```import cv2
 from pyzbar import pyzbar
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
@@ -68,3 +68,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
