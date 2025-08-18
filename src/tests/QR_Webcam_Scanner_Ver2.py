@@ -69,6 +69,11 @@ def detect_qr_opencv(frame):
     top_left = tuple(bbox[0][0])
     print(f"[디코딩된 QR 내용] {data}")  # 콘솔 확인용
     frame = draw_text_opencv(frame, f"QR 내용: {data}", (top_left[0], top_left[1] - 20))
+    
+    # ver.2에 추가됨: URL이면 실행 여부 묻기
+    if data.startswith("http://") or data.startswith("https://"):
+        ask_open_url(data)
+    
     return frame
         
 
