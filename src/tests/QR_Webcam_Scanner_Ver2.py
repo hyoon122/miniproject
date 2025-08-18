@@ -4,6 +4,12 @@ import numpy as np
 import sys, os
 import time
 
+# ver.2에 추가된 모듈은 아래와 같음.
+import webbrowser       # 웹브라우저 실행 모듈
+import tkinter as tk    # 팝업창 모듈
+from tkinter import messagebox
+import threading        # tkinter 팝업이 메인 루프를 막지 않도록 스레드 사용.
+
 # --- stderr 완전 무력화 (OpenCV 내부 경고 제거 목적) ---
 class SuppressStderr:
     def __enter__(self):
@@ -19,6 +25,20 @@ class SuppressStderr:
 
 last_data = None
 last_detect_time = 0
+
+# ver.2에 추가됨: 사용자에게 실행 여부 묻고 URL 열기
+def ask_open_url(url):
+    def popup():
+        root = tk.Tk()
+        root.withdraw()  # 창 숨기기
+
+        result = messagebox.askyesno("QR 코드 실행", "정말로 여시겠습니까?")
+        if result:
+            webbrowser.open(url)
+        root.destroy()
+
+    # tkinter 팝업은 별도 스레드에서 실행
+    threading.Thread(target=popup).start()
 
 # QR코드만 필터링
 def detect_qr_opencv(frame):
