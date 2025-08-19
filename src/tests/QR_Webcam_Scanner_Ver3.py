@@ -31,6 +31,38 @@ class SuppressStderr:
 last_data = None
 last_detect_time = 0
 
+# ver.3에 추가됨: 악성 QR 코드 탐지 함수
+def is_suspicious_qr(data):
+    """
+    QR 데이터가 의심스럽거나 악성일 가능성이 있는지 검사
+    """
+    if data.startswith("http://") or data.startswith("https://"):
+        parsed = urlparse(data)
+        domain = parsed.netloc.lower()
+
+        suspicious_domains = ["bit.ly", "tinyurl.com", "t.co", "goo.gl"]
+        dangerous_extensions = [".exe", ".apk", ".bat", ".sh"]
+
+        if any(domain.endswith(sd) for sd in suspicious_domains):
+            return True, "짧은 URL 서비스 사용"
+
+        if any(parsed.path.endswith(ext) for ext in dangerous_extensions):
+            return True, "위험 확장자 포함"
+
+        if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", domain):
+            return True, "IP 주소 기반 URL"
+
+        if len(data) > 200:
+            return True, "URL 길이 과도함"
+
+    if data.strip().lower().startswith("javascript:"):
+        return True, "JavaScript 실행 코드 포함"
+
+    if re.match(r"^[A-Za-z0-9+/=]{100,}$", data):
+        return True, "Base64 인코딩된 긴 문자열"
+
+    return False, ""
+
 # ver.2에 추가됨: 사용자에게 실행 여부 묻고 URL 열기
 def ask_open_url(url):
     def popup():
@@ -74,6 +106,15 @@ def detect_qr_opencv(frame):
     top_left = tuple(bbox[0][0])
     print(f"[디코딩된 QR 내용] {data}")  # 콘솔 확인용
     frame = draw_text_opencv(frame, f"QR 내용: {data}", (top_left[0], top_left[1] - 20))
+    
+    # ver.3에 추가됨: 악성 QR 탐지 적용
+    is_bad, reason = is_suspicious_qr(data)
+    if is_bad:
+        warning_text = f"⚠️ 악성 QR 의심: {reason}"
+        print(warning_text)
+        frame = draw_text_opencv(frame, warning_text, (30, 30), font_size=24, color=(0, 0, 255))
+    else:
+        frame = draw_text_opencv(frame, f"QR 내용: {data}", (top_left[0], top_left[1] - 20))
     
     # ver.2에 추가됨: URL이면 실행 여부 묻기
     if data.startswith("http://") or data.startswith("https://"):
