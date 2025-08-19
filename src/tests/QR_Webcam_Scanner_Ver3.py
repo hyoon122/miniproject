@@ -105,7 +105,6 @@ def detect_qr_opencv(frame):
 
     top_left = tuple(bbox[0][0])
     print(f"[디코딩된 QR 내용] {data}")  # 콘솔 확인용
-    frame = draw_text_opencv(frame, f"QR 내용: {data}", (top_left[0], top_left[1] - 20))
     
     # ver.3에 추가됨: 악성 QR 탐지 적용
     is_bad, reason = is_suspicious_qr(data)
