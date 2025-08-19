@@ -1,4 +1,4 @@
-# ver.3 업데이트 - qr 보안 검사기능 추가.
+# ver.3 업데이트 - qr 보안 검사 기능 추가.
 import cv2
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
