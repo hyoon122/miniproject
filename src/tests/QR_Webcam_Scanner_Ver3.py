@@ -1,4 +1,4 @@
-# ver.3 업데이트 - qr 보안 검사 기능 추가.
+# ver.3 업데이트 - qr 보안 검사 기능 추가, 야간 모드 지원 추가.
 import cv2
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
@@ -14,6 +14,8 @@ import threading        # tkinter 팝업이 메인 루프를 막지 않도록 �
 # ver.3에 추가된 모듈은 아래와 같음.
 import re                          # 정규식 검사용
 from urllib.parse import urlparse  # URL 분석용
+import platform                    # OS 구분용
+
 
 # --- stderr 완전 무력화 (OpenCV 내부 경고 제거 목적) ---
 class SuppressStderr:
@@ -30,6 +32,9 @@ class SuppressStderr:
 
 last_data = None
 last_detect_time = 0
+
+# ver.3에 추가됨: 전역 QR 검출기 생성
+qr_detector = cv2.QRCodeDetector()
 
 # ver.3에 추가됨: 악성 QR 코드 탐지 함수
 def is_suspicious_qr(data):
@@ -75,11 +80,28 @@ def ask_open_url(url):
         root.destroy()
 
     # tkinter 팝업은 별도 스레드에서 실행
-    threading.Thread(target=popup).start()
+    threading.Thread(target=popup, daemon=True).start() # ver.3에서 수정됨: daemon = True 추가.
+
+# ver.3에 추가됨: 야간 환경 감지 함수
+def is_dark_environment(frame, threshold=50):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    return np.mean(gray) < threshold
+
+# ver.3에 추가됨: 저조도 환경 대비 전처리 함수
+def enhance_for_low_light(frame):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(gray)
+    return cv2.cvtColor(enhanced, cv2.COLOR_GRAY2BGR)
 
 # QR코드만 필터링
 def detect_qr_opencv(frame):
     global last_data, last_detect_time
+
+    # ver.3에 추가됨: 야간 모드 여부 판단 및 전처리
+    dark_env = is_dark_environment(frame)
+    if dark_env:
+        frame = enhance_for_low_light(frame)
 
     with SuppressStderr():  # stderr 강제 차단 (콘솔 출력 완벽 차단)
         detector = cv2.QRCodeDetector()
@@ -114,6 +136,10 @@ def detect_qr_opencv(frame):
         frame = draw_text_opencv(frame, warning_text, (30, 30), font_size=24, color=(0, 0, 255))
     else:
         frame = draw_text_opencv(frame, f"QR 내용: {data}", (top_left[0], top_left[1] - 20))
+    
+    # ver.3에 추가됨: 야간 모드 안내 텍스트
+    if dark_env:
+        frame = draw_text_opencv(frame, "🌙 야간 모드 적용됨", (30, 60), font_size=16, color=(200, 200, 255))
     
     # ver.2에 추가됨: URL이면 실행 여부 묻기
     if data.startswith("http://") or data.startswith("https://"):
