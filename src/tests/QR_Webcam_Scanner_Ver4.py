@@ -166,7 +166,7 @@ def detect_qr_opencv(frame):
     is_bad, reason = is_suspicious_qr(data)
     if is_bad:
         print(reason)
-        frame = draw_text_opencv(frame, warning_text, (30, 30), font_size=24, color=(0, 0, 255))
+        frame = draw_text_opencv(frame, reason, (30, 30), font_size=24, color=(0, 0, 255))
     else:
         frame = draw_text_opencv(frame, f"QR 내용: {data}", (top_left[0], top_left[1] - 20))
     
