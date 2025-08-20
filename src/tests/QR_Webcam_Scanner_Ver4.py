@@ -40,7 +40,11 @@ qr_detector = cv2.QRCodeDetector()
 def is_suspicious_qr(data):
     """
     QR 데이터가 의심스럽거나 악성일 가능성이 있는지 검사
+    ver.4에 추가됨: 아래 조건 중, 최소 2개 이상 조건이 충족되어야 악성으로 판단
     """
+    suspicion_count = 0
+    reasons = []
+
     if data.startswith("http://") or data.startswith("https://"):
         parsed = urlparse(data)
         domain = parsed.netloc.lower()
@@ -49,24 +53,33 @@ def is_suspicious_qr(data):
         dangerous_extensions = [".exe", ".apk", ".bat", ".sh"]
 
         if any(domain.endswith(sd) for sd in suspicious_domains):
+            suspicion_count += 1
             return True, "짧은 URL 서비스 사용"
 
         if any(parsed.path.endswith(ext) for ext in dangerous_extensions):
+            suspicion_count += 1
             return True, "위험 확장자 포함"
 
         if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", domain):
+            suspicion_count += 1
             return True, "IP 주소 기반 URL"
 
         if len(data) > 200:
+            suspicion_count += 1
             return True, "URL 길이 과도함"
 
     if data.strip().lower().startswith("javascript:"):
+        suspicion_count += 1
         return True, "JavaScript 실행 코드 포함"
 
     if re.match(r"^[A-Za-z0-9+/=]{100,}$", data):
+        suspicion_count += 1
         return True, "Base64 인코딩된 긴 문자열"
-
-    return False, ""
+    
+    if suspicion_count >= 2:
+        return True, ", ".join(reasons)
+    else:
+        return False, ""
 
 # ver.2에 추가됨: 사용자에게 실행 여부 묻고 URL 열기
 def ask_open_url(url):
