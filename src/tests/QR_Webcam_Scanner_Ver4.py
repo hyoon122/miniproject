@@ -113,6 +113,9 @@ def is_suspicious_qr(data):
         reasons.append("Base64 인코딩된 긴 문자열")
         suspicion_count += 1
     
+    # 의심 카운트 최종 확인용 출력
+    print(f"[최종 의심 카운트] {suspicion_count}")
+
     if suspicion_count >= 2:
         return True, "⚠️ 악성 QR 의심:\n- " + "\n- ".join(reasons)
     else:
