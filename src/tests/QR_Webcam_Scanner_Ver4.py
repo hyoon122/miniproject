@@ -35,11 +35,27 @@ class SuppressStderr:
 last_data = None
 last_detect_time = 0
 
-# ver.4에 추가됨: 리다이렉션 추적 함수
-def resolve_redirects(url, timeout=5):
+# ver.4에 추가됨: 리다이렉션 추적 함수, User-Agent 헤더 추가
+def resolve_redirects(url, timeout=5, max_redirects=5):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
     try:
-        response = requests.head(url, allow_redirects=True, timeout=timeout)
-        return response.url
+        current_url = url
+        for _ in range(max_redirects):
+            response = requests.get(current_url, headers=headers, allow_redirects=False, timeout=timeout)
+            if 300 <= response.status_code < 400:
+                # Location 헤더로 리다이렉션 URL 추출
+                location = response.headers.get('Location')
+                if not location:
+                    break
+                # 상대경로를 절대 URL로 변환
+                current_url = requests.compat.urljoin(current_url, location)
+            else:
+                break
+        print(f"[최종 URL] {current_url}")  # 확인용 - 리다이렉션 결과가 항상 출력
+        return current_url
+    
     except requests.RequestException as e:
         print(f"[리다이렉션 확인 실패] {e}")
         return url  # 실패 시 원본 URL 그대로 사용
@@ -67,35 +83,35 @@ def is_suspicious_qr(data):
             suspicion_count += 1
         url_to_check = final_url  # 최종 URL 기준으로 검사
 
-        parsed = urlparse(data)
+        parsed = urlparse(url_to_check)  # 최종 리다이렉션된 URL 기준으로 검사
         domain = parsed.netloc.lower()
 
         suspicious_domains = ["bit.ly", "tinyurl.com", "t.co", "goo.gl"]
         dangerous_extensions = [".exe", ".apk", ".bat", ".sh"]
 
         if any(domain.endswith(sd) for sd in suspicious_domains):
+            reasons.append("짧은 URL 서비스 사용")
             suspicion_count += 1
-            return True, "짧은 URL 서비스 사용"
 
         if any(parsed.path.endswith(ext) for ext in dangerous_extensions):
+            reasons.append("위험 확장자 포함")
             suspicion_count += 1
-            return True, "위험 확장자 포함"
 
         if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", domain):
+            reasons.append("IP 주소 기반 URL")
             suspicion_count += 1
-            return True, "IP 주소 기반 URL"
 
         if len(data) > 200:
+            reasons.append("URL 길이 과도함")
             suspicion_count += 1
-            return True, "URL 길이 과도함"
 
     if data.strip().lower().startswith("javascript:"):
+        reasons.append("JavaScript 실행 코드 포함")
         suspicion_count += 1
-        return True, "JavaScript 실행 코드 포함"
 
     if re.match(r"^[A-Za-z0-9+/=]{100,}$", data):
+        reasons.append("Base64 인코딩된 긴 문자열")
         suspicion_count += 1
-        return True, "Base64 인코딩된 긴 문자열"
     
     if suspicion_count >= 2:
         return True, "⚠️ 악성 QR 의심:\n- " + "\n- ".join(reasons)
@@ -104,7 +120,7 @@ def is_suspicious_qr(data):
 
 # ver.2에 추가됨: 사용자에게 실행 여부 묻고 URL 열기
 def ask_open_url(url):
-    def popup():
+        # ver.4에서 수정됨: tkinter 팝업을 메인 쓰레드에서 직접 실행하도록 변경 (스레드 제거)
         root = tk.Tk()
         root.withdraw()  # 창 숨기기
 
@@ -112,9 +128,6 @@ def ask_open_url(url):
         if result:
             webbrowser.open(url)
         root.destroy()
-
-    # tkinter 팝업은 별도 스레드에서 실행
-    threading.Thread(target=popup, daemon=True).start() # ver.3에서 수정됨: daemon = True 추가.
 
 # ver.3에 추가됨: 야간 환경 감지 함수
 def is_dark_environment(frame, threshold=50):
