@@ -16,6 +16,8 @@ import re                          # 정규식 검사용
 from urllib.parse import urlparse  # URL 분석용
 import platform                    # OS 구분용
 
+# ver.4에 추가된 모듈은 아래와 같음.
+import requests         # 리다이렉션 추적 모듈 (악성 URL 변조를 통한 검사망 회피 방지.)
 
 # --- stderr 완전 무력화 (OpenCV 내부 경고 제거 목적) ---
 class SuppressStderr:
@@ -33,6 +35,15 @@ class SuppressStderr:
 last_data = None
 last_detect_time = 0
 
+# ver.4에 추가됨: 리다이렉션 추적 함수
+def resolve_redirects(url, timeout=5):
+    try:
+        response = requests.head(url, allow_redirects=True, timeout=timeout)
+        return response.url
+    except requests.RequestException as e:
+        print(f"[리다이렉션 확인 실패] {e}")
+        return url  # 실패 시 원본 URL 그대로 사용
+    
 # ver.3에 추가됨: 전역 QR 검출기 생성
 qr_detector = cv2.QRCodeDetector()
 
@@ -41,11 +52,21 @@ def is_suspicious_qr(data):
     """
     QR 데이터가 의심스럽거나 악성일 가능성이 있는지 검사
     ver.4에 추가됨: 아래 조건 중, 최소 2개 이상 조건이 충족되어야 악성으로 판단
+    + 리다이렉션된 최종 URL까지 검사 포함됨
     """
     suspicion_count = 0
     reasons = []
 
+    url_to_check = data
+
     if data.startswith("http://") or data.startswith("https://"):
+        # ver.4에 추가됨: 리다이렉션 추적
+        final_url = resolve_redirects(data)
+        if final_url != data:
+            reasons.append("리다이렉션 감지됨")
+            suspicion_count += 1
+        url_to_check = final_url  # 최종 URL 기준으로 검사
+
         parsed = urlparse(data)
         domain = parsed.netloc.lower()
 
@@ -77,7 +98,7 @@ def is_suspicious_qr(data):
         return True, "Base64 인코딩된 긴 문자열"
     
     if suspicion_count >= 2:
-        return True, ", ".join(reasons)
+        return True, "⚠️ 악성 QR 의심:\n- " + "\n- ".join(reasons)
     else:
         return False, ""
 
@@ -144,8 +165,7 @@ def detect_qr_opencv(frame):
     # ver.3에 추가됨: 악성 QR 탐지 적용
     is_bad, reason = is_suspicious_qr(data)
     if is_bad:
-        warning_text = f"⚠️ 악성 QR 의심: {reason}"
-        print(warning_text)
+        print(reason)
         frame = draw_text_opencv(frame, warning_text, (30, 30), font_size=24, color=(0, 0, 255))
     else:
         frame = draw_text_opencv(frame, f"QR 내용: {data}", (top_left[0], top_left[1] - 20))
