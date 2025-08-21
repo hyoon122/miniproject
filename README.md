@@ -10,30 +10,31 @@ QR코드에서 피싱과 악성코드를 예방할 수 있다.
 ---
 
 ## 프로젝트 루트
-docs - 문제점 및 피드백에 관한 내용
-src - 프로젝트를 진행하며 만들어온 알고리즘들
-┣ 📂 docs
-┃ ┗ 📂 feedback
-┃ ┣ 📄 01-problem.md
-┃ ┣ 📄 02-problem.md
-┃ ┣ 📄 0814.md
-┃ ┣ 📄 0818.md
-┃ ┣ 📄 0819.md
-┃ ┗ 📄 0820.md
-┣ 📂 src
-┃ ┣ 📂 final
-┃ ┃ ┗ 📄 QR_Webcam_Scanner_Ver5.py
-┃ ┣ 📂 prototypes
-┃ ┃ ┣ 📄 QR_Domain_Scanner.py
-┃ ┃ ┣ 📄 Scam_scanner.py
-┃ ┃ ┗ 📄 scan_noopencv.py
-┃ ┗ 📂 tests
-┃ ┣ 📄 QR_Webcam_Scanner.py
-┃ ┣ 📄 QR_Webcam_Scanner_Ver2.py
-┃ ┣ 📄 QR_Webcam_Scanner_Ver3.py
-┃ ┗ 📄 QR_Webcam_Scanner_Ver4.py
-┣ 📄 .gitattributes
-┗ 📄 README.md
+   -  docs - 문제점 및 피드백에 관한 내용
+   -  src - 프로젝트를 진행하며 만들어온 알고리즘들
+프로젝트 루트
+┣ docs
+┃ ┗ feedback
+┃ ┣ 01-problem.md
+┃ ┣ 02-problem.md
+┃ ┣ 0814.md
+┃ ┣ 0818.md
+┃ ┣ 0819.md
+┃ ┗ 0820.md
+┣ src
+┃ ┣ final
+┃ ┃ ┗ QR_Webcam_Scanner_Ver5.py
+┃ ┣ prototypes
+┃ ┃ ┣ QR_Domain_Scanner.py
+┃ ┃ ┣ Scam_scanner.py
+┃ ┃ ┗ scan_noopencv.py
+┃ ┗ tests
+┃ ┣ QR_Webcam_Scanner.py
+┃ ┣ QR_Webcam_Scanner_Ver2.py
+┃ ┣ QR_Webcam_Scanner_Ver3.py
+┃ ┗ QR_Webcam_Scanner_Ver4.py
+┣ .gitattributes
+┗ README.md
 
 ## 보안 위협 상황
 QR코드를 스캔해야 하는 상황에,
