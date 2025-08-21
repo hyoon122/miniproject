@@ -72,6 +72,7 @@ def is_suspicious_qr(data):
     suspicion_count = 0
     reasons = []
 
+    url_to_check = data
     final_url = data  # ver.5에서 수정됨: 기본값 추가
 
     if data.startswith("http://") or data.startswith("https://"):
@@ -80,8 +81,9 @@ def is_suspicious_qr(data):
         if final_url != data:
             reasons.append("리다이렉션 감지됨")
             suspicion_count += 1
+        url_to_check = final_url
 
-        parsed = urlparse(final_url)  # 최종 리다이렉션된 URL 기준으로 검사
+        parsed = urlparse(url_to_check)  # 최종 리다이렉션된 URL 기준으로 검사
         domain = parsed.netloc.lower()
 
         suspicious_domains = ["bit.ly", "tinyurl.com", "t.co", "goo.gl"]
@@ -114,10 +116,7 @@ def is_suspicious_qr(data):
     # 의심 카운트 최종 확인용 출력 / ver.5에선 의심 이유까지 출력되도록 추가.
     print(f"[최종 의심 카운트] {suspicion_count} / 사유: {', '.join(reasons) if reasons else '없음'}")
 
-    if suspicion_count >= 2:
-        return True, "⚠️ 악성 QR 의심:\n- " + "\n- ".join(reasons), final_url
-    else:
-        return False, "", final_url  # ver.5에 추가됨: final_url 반환 추가
+    return suspicion_count >= 2, final_url, suspicion_count, reasons
 
 # ver.2에 추가됨: 사용자에게 실행 여부 묻고 URL 열기
 def ask_open_url(url):
@@ -168,7 +167,7 @@ def show_preview_window(qr_data, final_url, suspicion_count, reasons):  # 매개
         url_display.configure(state='disabled')
         url_display.pack(padx=10, pady=5)
 
-    if reasons:
+    if suspicion_count > 0 and reasons:
         count_label = tk.Label(window, text=f"[의심 카운트] {suspicion_count}", font=("Arial", 12, "bold"), fg="red")
         count_label.pack(pady=(10, 0))
 
@@ -218,19 +217,16 @@ def detect_qr_opencv(frame):
     print(f"[디코딩된 QR 내용] {data}")  # 콘솔 확인용
     
     # ver.3에 추가됨: 악성 QR 탐지 적용
-    is_bad, reason, final_url = is_suspicious_qr(data)
-
-    # ver.5에 추가됨: GUI 미리보기 창 띄우기 (사유 포함)
-    reasons_list = reason.replace("⚠️ 악성 QR 의심:\n", "").split("\n- ") if reason else []
-    suspicion_count = len(reasons_list)
+    is_bad, final_url, suspicion_count, reasons_list = is_suspicious_qr(data)
 
     # GUI 미리보기 띄우기, 이 부분은 별도 스레드로 띄우거나 UI 충돌 주의 필요 (여기서는 바로 호출)
     # 만약 UI 충돌 발생하면 threading.Thread(target=show_preview_window, args=...).start() 로 수정 가능
     threading.Thread(target=show_preview_window, args=(data, final_url, suspicion_count, reasons_list), daemon=True).start()
 
     if is_bad:
-        print(reason)
-        frame = draw_text_opencv(frame, reason, (30, 30), font_size=24, color=(0, 0, 255))
+        reason_text = "⚠️ 악성 QR 의심:\n- " + "\n- ".join(reasons_list)
+        print(reason_text)
+        frame = draw_text_opencv(frame, reason_text, (30, 30), font_size=24, color=(0, 0, 255))
     else:
         frame = draw_text_opencv(frame, f"QR 내용: {data}", (top_left[0], top_left[1] - 20))
     
