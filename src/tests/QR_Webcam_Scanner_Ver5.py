@@ -1,4 +1,3 @@
-# ver.3 업데이트 - qr 보안 검사 기능 추가, 야간 모드 지원 추가.
 import cv2
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
@@ -113,8 +112,8 @@ def is_suspicious_qr(data):
         reasons.append("Base64 인코딩된 긴 문자열")
         suspicion_count += 1
     
-    # 의심 카운트 최종 확인용 출력
-    print(f"[최종 의심 카운트] {suspicion_count}")
+    # 의심 카운트 최종 확인용 출력 / ver.5에선 의심 이유까지 출력되도록 추가.
+    print(f"[최종 의심 카운트] {suspicion_count} / 사유: {', '.join(reasons) if reasons else '없음'}")
 
     if suspicion_count >= 2:
         return True, "⚠️ 악성 QR 의심:\n- " + "\n- ".join(reasons)
@@ -143,6 +142,33 @@ def enhance_for_low_light(frame):
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
     enhanced = clahe.apply(gray)
     return cv2.cvtColor(enhanced, cv2.COLOR_GRAY2BGR)
+
+# ver.5에 추가됨: QR코드 미리보기 창 띄우기 함수
+def show_preview_window(qr_data, reasons):
+    window = tk.Tk()
+    window.title("QR 코드 미리보기")
+    window.geometry("600x400")
+
+    label = tk.Label(window, text="QR 코드 데이터 미리보기", font=("Arial", 14, "bold"))
+    label.pack(pady=10)
+
+    # QR 코드 내용 출력
+    text_area = tk.Text(window, wrap=tk.WORD, height=10, width=70)
+    text_area.insert(tk.END, qr_data)
+    text_area.configure(state='disabled')
+    text_area.pack(padx=10, pady=10)
+
+    if reasons:
+        reasons_label = tk.Label(window, text="의심 사유:", font=("Arial", 12, "bold"), fg="red")
+        reasons_label.pack(pady=(10, 0))
+        for reason in reasons:
+            reason_text = tk.Label(window, text=f"• {reason}", font=("Arial", 11), fg="red")
+            reason_text.pack()
+
+    close_button = tk.Button(window, text="닫기", command=window.destroy)
+    close_button.pack(pady=20)
+
+    window.mainloop()
 
 # QR코드만 필터링
 def detect_qr_opencv(frame):
@@ -180,6 +206,11 @@ def detect_qr_opencv(frame):
     
     # ver.3에 추가됨: 악성 QR 탐지 적용
     is_bad, reason = is_suspicious_qr(data)
+
+    # ver.5에 추가됨: GUI 미리보기 창 띄우기 (사유 포함)
+    reasons_list = reason.replace("⚠️ 악성 QR 의심:\n", "").split("\n- ") if reason else []
+    threading.Thread(target=show_preview_window, args=(data, reasons_list), daemon=True).start()
+
     if is_bad:
         print(reason)
         frame = draw_text_opencv(frame, reason, (30, 30), font_size=24, color=(0, 0, 255))
